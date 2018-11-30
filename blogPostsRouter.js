@@ -12,8 +12,13 @@ BlogPosts.create('Second Post', 'Lorem ipsum dolor', 'Author 2');
 router.get('/', (req, res) => {
   res.json(BlogPosts.get());
 });
+
 router.post('/', jsonParser, (req, res) => {});
 router.put('/:id', jsonParser, (req, res) => {});
-router.delete('/:id', (req, res) => {});
+router.delete('/:id', (req, res) => {
+  BlogPosts.delete(req.params.id);
+  console.log(`Deleted blog post with ID: ${req.params.ID}`);
+  res.status(204).end();
+});
 
 module.exports = router;
