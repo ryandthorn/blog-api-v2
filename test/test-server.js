@@ -46,4 +46,30 @@ describe('Blog Posts', function() {
         );
       });
   });
+  it('should update an item on PUT', function() {
+    const updateData = {
+      title: 'Updated title',
+      content: 'Updated content',
+      author: 'Updated author'
+    };
+    return (
+      chai 
+        .request(app)
+        .get('/blog-posts')
+        .then(function(res) {
+          updateData.id = res.body[0].id;
+          updateData.publishDate = Date.now();
+          return chai
+            .request(app)
+            .put(`/blog-posts/${updateData.id}`)
+            .send(updateData)
+        })
+        .then(function(res) {
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body).to.deep.equal(updateData);
+        })
+    );
+  });
 });
