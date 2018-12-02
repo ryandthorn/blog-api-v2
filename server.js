@@ -8,6 +8,10 @@ app.use(morgan('common'));
 
 app.use('/blog-posts', blogPostsRouter);
 
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html');
+});
+
 let server;
 
 function runServer() {
