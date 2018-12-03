@@ -29,4 +29,29 @@ router.get('/:id', (req, res) => {
     });
 });
 
+router.post('/', (req, res) => {
+  const requiredFields = ['title', 'author', 'content'];
+  for (let i = 0; i < requiredFields.length; i++) {
+    const field = requiredFields[i];
+    if (!(field in req.body)) {
+      const message = `Missing '${field}' in request body`;
+      console.error(message);
+      return res.status(400).send(message);
+    }
+  }
+
+  BlogPosts
+    .create({
+      title: req.body.title,
+      author: req.body.author,
+      content: req.body.content,
+      created: Date.now()
+    })
+    .then(post => res.status(201).json(post.serialize()))
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ message: 'Internal server error' });
+    });
+});
+
 module.exports = router;
