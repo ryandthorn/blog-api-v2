@@ -19,4 +19,14 @@ router.get('/', (req, res) => {
     });
 });
 
+router.get('/:id', (req, res) => {
+  BlogPosts
+    .findById(req.params.id)
+    .then(post => res.json(post.serialize()))
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ message: "Internal server error" });
+    });
+});
+
 module.exports = router;
