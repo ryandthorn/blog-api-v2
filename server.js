@@ -8,8 +8,12 @@ const { PORT, DATABASE_URL } = require('./config');
 
 const app = express();
 app.use(express.json());
-const blogPostsRouter = require('./blogPostsRouter')
-app.use('/blog-posts', blogPostsRouter);
+
+const blogPostsRouter = require('./blogPostsRouter');
+const authorsRouter = require('./authorsRouter');
+app.use('/posts', blogPostsRouter);
+app.use('/authors', authorsRouter);
+
 app.use(morgan('common'));
 
 app.get('/', (req, res) => {

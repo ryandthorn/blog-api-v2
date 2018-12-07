@@ -2,16 +2,22 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
-mongoose.set('useFindAndModify', false);
+const morgan = require('morgan');
+router.use(morgan('common'));
 
-const { BlogPosts } = require('./models');
+// Fix deprecation warnings
+mongoose.set('useFindAndModify', false);
+mongoose.set('useCreateIndex', true);
+mongoose.set('useNewUrlParser', true);
+
+const { Author, BlogPost } = require('./models');
 
 router.get('/', (req, res) => {
-  BlogPosts
+  BlogPost
     .find()
     .then(posts => {
       res.json({
-        posts: posts.map(posts => posts.serialize())
+        posts: posts.map(post => post.serialize())
       });
     })
     .catch(err => {
@@ -21,7 +27,7 @@ router.get('/', (req, res) => {
 });
 
 router.get('/:id', (req, res) => {
-  BlogPosts
+  BlogPost
     .findById(req.params.id)
     .then(post => res.json(post.serialize()))
     .catch(err => {
@@ -31,7 +37,7 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const requiredFields = ['title', 'author', 'content'];
+  const requiredFields = ['title', 'author_id', 'content'];
   for (let i = 0; i < requiredFields.length; i++) {
     const field = requiredFields[i];
     if (!(field in req.body)) {
@@ -41,18 +47,38 @@ router.post('/', (req, res) => {
     }
   }
 
-  BlogPosts
-    .create({
-      title: req.body.title,
-      author: req.body.author,
-      content: req.body.content,
-      created: Date.now()
+  Author
+    .findById(req.body.author_id)
+    .then(author => {
+      if (author) {
+        BlogPost
+          .create({
+            title: req.body.title,
+            author: req.body.author_id,
+            content: req.body.content,
+            created: Date.now()
+          })
+          .then(post => {
+            res.status(201).json({
+              id: post.id,
+              author: `${author.firstName} ${author.lastName}`,
+              content: post.content,
+              title: post.title,
+              comments: post.comments
+            })
+          })
+          .catch(err => {
+            console.error(err);
+            res.status(500).json({ message: 'Internal server error - blogposts collection' });
+        });
+      } else {
+        res.status(400).json({ message: "Author not found" });
+      }
     })
-    .then(post => res.status(201).json(post.serialize()))
     .catch(err => {
       console.error(err);
-      res.status(500).json({ message: 'Internal server error' });
-    });
+      res.status(500).json({ message: "Internal server error - author collection" });
+    })
 });
 
 router.put('/:id', (req, res) => {
@@ -64,16 +90,17 @@ router.put('/:id', (req, res) => {
   }
 
   const toUpdate = {};
-  const updateableFields = ['title', 'content', 'author'];
+  const updateableFields = ['title', 'content'];
   updateableFields.forEach(field => {
     if (field in req.body) {
       toUpdate[field] = req.body[field];
     }
   });
 
-  BlogPosts
+  BlogPost
     .findByIdAndUpdate(req.params.id, { $set: toUpdate }, { new: true })
-    .then(post => res.status(200).json(post.serialize()))
+    .populate('author')
+    .then(post => res.status(200).json(post.serialize())) 
     .catch(err => {
       console.error(err);
       res.status(500).json({ message: 'Internal server error' });
@@ -81,7 +108,7 @@ router.put('/:id', (req, res) => {
 });
 
 router.delete('/:id', (req, res) => {
-  BlogPosts
+  BlogPost
     .findByIdAndDelete(req.params.id)
     .then(post => res.status(204).end())
     .catch(err => {
